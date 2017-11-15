@@ -23,7 +23,7 @@ func main() {
 		
 		err := math.Abs(math.Pi-pi)/math.Pi * 100
 		
-		fmt.Printf("%d %19d %19d %40.38f %f%%\n",total,a,b,pi,err)
+		fmt.Printf("%d %19d %19d %40.38f %E%%\n",total,a,b,pi,err)
 	}
 }
 
