@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"math/rand"
 	"os"
+	"runtime"
 	"strconv"
 )
 
@@ -25,9 +26,27 @@ func main() {
 	var total int64 = 0
 	var coprimes int64 = 0
 
-	a := new(big.Int)
-	b := new(big.Int)
+	total_chan := make(chan int64, runtime.NumCPU())
+	coprimes_chan := make(chan int64, runtime.NumCPU())
 
+	for thr := 0; thr < runtime.NumCPU(); thr++ {
+		go CheckInts(digits, total_chan, coprimes_chan)
+	}
+
+	for {
+
+		total += <-total_chan
+		coprimes += <-coprimes_chan
+		if total%100 == 0 {
+			pi := math.Sqrt(6 / (float64(coprimes) / float64(total)))
+			err := math.Abs(math.Pi-pi) / math.Pi * 100
+
+			fmt.Printf("%d %d %40.38f %E%%\r", total, coprimes, pi, err)
+		}
+	}
+}
+
+func CheckInts(digits int, total_chan chan int64, coprimes_chan chan int64) {
 	for {
 
 		var abuffer bytes.Buffer
@@ -36,22 +55,16 @@ func main() {
 			abuffer.WriteString(strconv.Itoa(rand.Intn(10)))
 			bbuffer.WriteString(strconv.Itoa(rand.Intn(10)))
 		}
+		a := new(big.Int)
+		b := new(big.Int)
 		a.SetString(abuffer.String(), 10)
 		b.SetString(bbuffer.String(), 10)
 
-		total++
+		total_chan <- 1
 		if IsCoprime(a, b) {
-			coprimes++
-		}
-
-		if total%100 == 0 {
-			pi := math.Sqrt(6 / (float64(coprimes) / float64(total)))
-			err := math.Abs(math.Pi-pi) / math.Pi * 100
-
-			//fmt.Println()
-			//fmt.Println(a)
-			//fmt.Println(b)
-			fmt.Printf("%d %d %40.38f %E%%\r", total, coprimes, pi, err)
+			coprimes_chan <- 1
+		} else {
+			coprimes_chan <- 0
 		}
 	}
 }
